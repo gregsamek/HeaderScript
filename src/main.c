@@ -6,6 +6,8 @@
 #define true 1
 #define false 0
 
+#define DEFAULT_HEADER_LIST "test/test.txt"
+
 bool LoadFile(const char* file_name, char** buffer)
 {
 	FILE* file = fopen(file_name, "rb");
@@ -56,13 +58,10 @@ bool GetSourceFileList(int argc, char **argv, char** source_files)
     }
     else
     {
-        const char* default_file = "../test/test.h";
-        *source_files = malloc(strlen(default_file) + 1);
-        if (!*source_files) {
-            fprintf(stderr, "Memory allocation failed!\n");
-            return false;
-        }
-        strcpy(*source_files, default_file);
+        if (!LoadFile(DEFAULT_HEADER_LIST, source_files)) 
+		{
+			return false;
+		}
     }
 	return true;
 }
@@ -77,13 +76,46 @@ int main(int argc, char **argv)
 
 	printf("Source files: %s\n", source_files);
 
-	char* header_file = NULL;
-	LoadFile(source_files, &header_file);
+	char *scanner_start, *scanner_current = source_files;
+	char* headers[1024];
+	int header_count = 0;
 
-	printf("Header file content:\n%s\n", header_file);
+	while (true)
+	{
+		scanner_start = scanner_current;
+		if (*scanner_current == '\0')
+		{
+			break;
+		}
+
+		while (*scanner_current != '\0' && *scanner_current != '\n' && *scanner_current != ' ' && *scanner_current != '\t')
+		{
+			scanner_current++;
+		}
+
+		if (scanner_current > scanner_start)
+		{
+			headers[header_count++] = scanner_start;
+		}
+
+		while (*scanner_current == '\n' || *scanner_current == ' ' || *scanner_current == '\t' || *scanner_current == '\r')
+		{
+			scanner_current++;
+		}
+	}
+
+	for (int i = 0; i < header_count; i++)
+	{
+		printf("Found header file: %s\n", headers[i]);
+	}
+
+	// char* header_file = NULL;
+	// LoadFile(source_files, &header_file);
+
+	// printf("Header file content:\n%s\n", header_file);
 
 	free(source_files);
-	free(header_file);
+	// free(header_file);
 
 	return 0;
 }
