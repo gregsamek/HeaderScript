@@ -108,15 +108,14 @@ int main(int argc, char **argv)
 	for (int i = 0; i < header_count; i++)
 	{
 		printf("Found header file: %s\n", headers[i]);
+		char* header_file = NULL;
+		LoadFile(source_files, &header_file);
+
+		printf("\n%s\n", header_file);
+		free(header_file);
 	}
 
-	// char* header_file = NULL;
-	// LoadFile(source_files, &header_file);
-
-	// printf("Header file content:\n%s\n", header_file);
-
 	free(source_files);
-	// free(header_file);
 
 	return 0;
 }
