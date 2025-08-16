@@ -1,14 +1,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-int main(int argc, char **argv)
-{
-	char* source_files = NULL;
+#define bool int
+#define true 1
+#define false 0
 
-    if (argc > 2) 
+bool GetSourceFileList(int argc, char **argv, char* source_files)
+{
+	if (argc > 2) 
     {
         fprintf(stderr, "Usage: %s <header_list>\n", argv[0]);
-        return -1;
+        return false;
     }
     if (argc == 2)
     {
@@ -16,7 +18,7 @@ int main(int argc, char **argv)
         if (!file) 
         {
             fprintf(stderr, "Could not open file: %s\n", argv[1]);
-            return -1;
+            return false;
         }
     
         fseek(file, 0L, SEEK_END);
@@ -28,7 +30,7 @@ int main(int argc, char **argv)
         {
             fprintf(stderr, "Memory allocation failed!\n");
             fclose(file);
-            return -1;
+            return false;
         }
         size_t bytes_read = fread(source_files, sizeof(char), file_size, file);
         if (bytes_read != file_size) 
@@ -36,7 +38,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "Failed to read the entire file: %s\n", argv[1]);
             free(source_files);
             fclose(file);
-            return -1;
+            return false;
         }
         source_files[bytes_read] = '\0';
     
@@ -44,9 +46,20 @@ int main(int argc, char **argv)
     }
     else
     {
-        // source_files = "(if else for func null foobar 123.456 \"Hello, World!\")";
         source_files = "test.h";
     }
+	return true;
+}
+
+int main(int argc, char **argv)
+{
+	char* source_files = NULL;
+	if (!GetSourceFileList(argc, argv, source_files))
+	{
+		return 1;
+	}
+
+	printf("Source files: %s\n", source_files);
 
 	return 0;
 }
