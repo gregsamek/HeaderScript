@@ -100,6 +100,7 @@ int main(int argc, char **argv)
 
 		while (*scanner_current == '\n' || *scanner_current == ' ' || *scanner_current == '\t' || *scanner_current == '\r')
 		{
+			*scanner_current = '\0';
 			scanner_current++;
 		}
 	}
