@@ -42,7 +42,7 @@ bool LoadFile(const char* file_name, char** buffer)
 	return true;
 }
 
-bool GetSourceFileList(int argc, char **argv, char** source_files)
+bool GetHeaderFileList(int argc, char **argv, char** header_file_list)
 {
 	if (argc > 2) 
     {
@@ -51,14 +51,14 @@ bool GetSourceFileList(int argc, char **argv, char** source_files)
     }
     if (argc == 2)
     {
-        if (!LoadFile(argv[1], source_files)) 
+        if (!LoadFile(argv[1], header_file_list)) 
 		{
 			return false;
 		}
     }
     else
     {
-        if (!LoadFile(DEFAULT_HEADER_LIST, source_files)) 
+        if (!LoadFile(DEFAULT_HEADER_LIST, header_file_list)) 
 		{
 			return false;
 		}
@@ -68,15 +68,15 @@ bool GetSourceFileList(int argc, char **argv, char** source_files)
 
 int main(int argc, char **argv)
 {
-	char* source_files = NULL;
-	if (!GetSourceFileList(argc, argv, &source_files))
+	char* header_file_list = NULL;
+	if (!GetHeaderFileList(argc, argv, &header_file_list))
 	{
 		return -1;
 	}
 
-	printf("Source files: %s\n", source_files);
+	printf("Source files: %s\n", header_file_list);
 
-	char *scanner_start, *scanner_current = source_files;
+	char *scanner_start, *scanner_current = header_file_list;
 	char* headers[1024];
 	int header_count = 0;
 
@@ -109,13 +109,13 @@ int main(int argc, char **argv)
 	{
 		printf("Found header file: %s\n", headers[i]);
 		char* header_file = NULL;
-		LoadFile(source_files, &header_file);
+		LoadFile(header_file_list, &header_file);
 
 		printf("\n%s\n", header_file);
 		free(header_file);
 	}
 
-	free(source_files);
+	free(header_file_list);
 
 	return 0;
 }
