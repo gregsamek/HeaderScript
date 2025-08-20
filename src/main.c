@@ -66,20 +66,9 @@ bool GetHeaderFileList(int argc, char **argv, char** header_file_list)
 	return true;
 }
 
-int main(int argc, char **argv)
+bool ParseHeaderFileList(char* header_file_list, char* headers[], int* header_count)
 {
-	char* header_file_list = NULL;
-	if (!GetHeaderFileList(argc, argv, &header_file_list))
-	{
-		return -1;
-	}
-
-	printf("Source files: %s\n", header_file_list);
-
 	char *scanner_start, *scanner_current = header_file_list;
-	char* headers[1024];
-	int header_count = 0;
-
 	while (true)
 	{
 		scanner_start = scanner_current;
@@ -95,7 +84,7 @@ int main(int argc, char **argv)
 
 		if (scanner_current > scanner_start)
 		{
-			headers[header_count++] = scanner_start;
+			headers[(*header_count)++] = scanner_start;
 		}
 
 		while (*scanner_current == '\n' || *scanner_current == ' ' || *scanner_current == '\t' || *scanner_current == '\r')
@@ -104,14 +93,34 @@ int main(int argc, char **argv)
 			scanner_current++;
 		}
 	}
+	return true;
+}
+
+int main(int argc, char **argv)
+{
+	char* header_file_list = NULL;
+	if (!GetHeaderFileList(argc, argv, &header_file_list))
+	{
+		return -1;
+	}
+
+	printf("\nHeaders to parse:\n%s\n\n", header_file_list);
+
+	char* headers[1024];
+	int header_count = 0;
+
+	if (!ParseHeaderFileList(header_file_list, headers, &header_count))
+	{
+		free(header_file_list);
+		return -1;
+	}
 
 	for (int i = 0; i < header_count; i++)
 	{
-		printf("Found header file: %s\n", headers[i]);
 		char* header_file = NULL;
 		LoadFile(headers[i], &header_file);
 
-		printf("\n%s\n", header_file);
+		printf("`%s`\n%s\n\n", headers[i], header_file);
 		free(header_file);
 	}
 
