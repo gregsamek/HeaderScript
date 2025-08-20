@@ -109,7 +109,7 @@ int main(int argc, char **argv)
 	{
 		printf("Found header file: %s\n", headers[i]);
 		char* header_file = NULL;
-		LoadFile(header_file_list, &header_file);
+		LoadFile(headers[i], &header_file);
 
 		printf("\n%s\n", header_file);
 		free(header_file);
