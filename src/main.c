@@ -22,7 +22,14 @@ typedef struct Array_Function
     int cap;
 } Array_Function;
 
-bool LoadFile(const char* file_name, char** buffer)
+typedef struct Array_Char
+{
+    char* arr;
+    int len;
+    int cap;
+} Array_Char;
+
+bool LoadFile(const char* file_name, char** buffer, size_t* file_size)
 {
 	FILE* file = fopen(file_name, "rb");
 	if (!file)
@@ -32,18 +39,18 @@ bool LoadFile(const char* file_name, char** buffer)
 	}
 
 	fseek(file, 0L, SEEK_END);
-	size_t file_size = ftell(file);
+	*file_size = ftell(file);
 	rewind(file);
 
-	*buffer = (char*)malloc(file_size + 1);
+	*buffer = (char*)malloc(*file_size + 1);
 	if (!*buffer) 
 	{
 		fprintf(stderr, "Memory allocation failed!\n");
 		fclose(file);
 		return false;
 	}
-	size_t bytes_read = fread(*buffer, sizeof(char), file_size, file);
-	if (bytes_read != file_size) 
+	size_t bytes_read = fread(*buffer, sizeof(char), *file_size, file);
+	if (bytes_read != *file_size) 
 	{
 		fprintf(stderr, "Failed to read the entire file: %s\n", file_name);
 		free(*buffer);
@@ -56,7 +63,7 @@ bool LoadFile(const char* file_name, char** buffer)
 	return true;
 }
 
-bool GetHeaderFileList(int argc, char **argv, char** header_file_list)
+bool GetHeaderFileList(int argc, char **argv, char** header_file_list, size_t* file_size)
 {
 	if (argc > 2) 
     {
@@ -65,14 +72,14 @@ bool GetHeaderFileList(int argc, char **argv, char** header_file_list)
     }
     if (argc == 2)
     {
-        if (!LoadFile(argv[1], header_file_list)) 
+        if (!LoadFile(argv[1], header_file_list, file_size)) 
 		{
 			return false;
 		}
     }
     else
     {
-        if (!LoadFile(DEFAULT_HEADER_LIST, header_file_list)) 
+        if (!LoadFile(DEFAULT_HEADER_LIST, header_file_list, file_size)) 
 		{
 			return false;
 		}
@@ -114,12 +121,14 @@ bool ParseFunctions(char* header_file, Array_Function* functions)
 {
 	// DUMMY IMPLEMENTATION; TODO
 	Array_Append(functions, (Function){ .name = "test" });
+	return true;
 }
 
 int main(int argc, char **argv)
 {
 	char* header_file_list = NULL;
-	if (!GetHeaderFileList(argc, argv, &header_file_list))
+	size_t header_file_list_size;
+	if (!GetHeaderFileList(argc, argv, &header_file_list, &header_file_list_size))
 	{
 		return -1;
 	}
@@ -141,7 +150,8 @@ int main(int argc, char **argv)
 	for (int i = 0; i < header_count; i++)
 	{
 		char* header_file = NULL;
-		LoadFile(headers[i], &header_file);
+		size_t file_size;
+		LoadFile(headers[i], &header_file, &file_size);
 		printf("`%s`\n%s\n\n", headers[i], header_file);
 
 		if (!ParseFunctions(header_file, &functions))
@@ -151,11 +161,24 @@ int main(int argc, char **argv)
 
 		free(header_file);
 	}
-
+	
 	for (int i = 0; i < functions.len; i++)
 	{
 		printf("Found function: %s\n", functions.arr[i].name);
 	}
+	
+	Array_Char out = {0};
+	size_t out_size = header_file_list_size + header_count * strlen("#include \"\"\n");
+	Array_Initialize(&out, out_size);
+	
+	for (int i = 0; i < header_count; i++)
+	{
+		char* include_line = out.arr + out.len;
+		snprintf(include_line, out_size - out.len, "#include \"%s\"\n", headers[i]);
+		out.len += strlen(include_line);
+	}
+
+	printf("Generated output:\n\n%s\n", out.arr);
 
 	free(header_file_list);
 
