@@ -2,11 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "array.h"
+
 #define bool int
 #define true 1
 #define false 0
 
 #define DEFAULT_HEADER_LIST "test/test.txt"
+
+typedef struct
+{
+	char* name;
+} Function;
+
+typedef struct Array_Function
+{
+    Function* arr;
+    int len;
+    int cap;
+} Array_Function;
 
 bool LoadFile(const char* file_name, char** buffer)
 {
@@ -96,6 +110,12 @@ bool ParseHeaderFileList(char* header_file_list, char* headers[], int* header_co
 	return true;
 }
 
+bool ParseFunctions(char* header_file, Array_Function* functions)
+{
+	// DUMMY IMPLEMENTATION; TODO
+	Array_Append(functions, (Function){ .name = "test" });
+}
+
 int main(int argc, char **argv)
 {
 	char* header_file_list = NULL;
@@ -115,13 +135,26 @@ int main(int argc, char **argv)
 		return -1;
 	}
 
+	Array_Function functions = {0};
+	Array_Initialize(&functions, 0);
+
 	for (int i = 0; i < header_count; i++)
 	{
 		char* header_file = NULL;
 		LoadFile(headers[i], &header_file);
-
 		printf("`%s`\n%s\n\n", headers[i], header_file);
+
+		if (!ParseFunctions(header_file, &functions))
+		{
+			fprintf(stderr, "Failed to parse functions from: %s\n", headers[i]);
+		}
+
 		free(header_file);
+	}
+
+	for (int i = 0; i < functions.len; i++)
+	{
+		printf("Found function: %s\n", functions.arr[i].name);
 	}
 
 	free(header_file_list);
