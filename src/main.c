@@ -166,17 +166,58 @@ int main(int argc, char **argv)
 	{
 		printf("Found function: %s\n", functions.arr[i].name);
 	}
-	
+
+	char* header_guard = "#ifndef HEADERSCRIPT_H\n#define HEADERSCRIPT_H\n\n";
+	char* cpp_compatibility = "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n";
+
 	Array_Char out = {0};
-	size_t out_size = header_file_list_size + header_count * strlen("#include \"\"\n");
-	Array_Initialize(&out, out_size);
-	
+	Array_Initialize(&out, 16384);
+	memset(out.arr, 0, out.cap);
+
+	#define Append_fmt(fmt, ...) \
+	do { \
+		int needed = snprintf(NULL, 0, fmt, ##__VA_ARGS__); \
+		if (needed < 0) \
+		{ \
+			fprintf(stderr, "snprintf encoding error!\n"); \
+			break; \
+		} \
+		while (out.len + needed + 1 > out.cap) \
+		{ \
+			int new_cap = out.cap * 2; \
+			if (new_cap < out.len + needed + 1) { \
+				new_cap = out.len + needed + 1; \
+			} \
+			void* temp_ptr = realloc(out.arr, new_cap); \
+			if (temp_ptr == NULL) \
+			{ \
+				fprintf(stderr, "Failed to reallocate array memory!\n"); \
+				break;\
+			} \
+			out.arr = temp_ptr; \
+			out.cap = new_cap; \
+		} \
+		int written = snprintf(out.arr + out.len, out.cap - out.len, fmt, ##__VA_ARGS__); \
+		if (written > 0) out.len += written; \
+	} while (0)
+
+	Append_fmt("%s", header_guard);
+	Append_fmt("%s", cpp_compatibility);
+
 	for (int i = 0; i < header_count; i++)
 	{
-		char* include_line = out.arr + out.len;
-		snprintf(include_line, out_size - out.len, "#include \"%s\"\n", headers[i]);
-		out.len += strlen(include_line);
+		Append_fmt("#include \"%s\"\n", headers[i]);
 	}
+
+	// TODO header
+
+	char* header_footer = "\n#ifdef __cplusplus\n}\n#endif\n\n#endif // HEADERSCRIPT_H\n";
+
+	char* implementation_guard = "#ifdef HEADERSCRIPT_IMPLEMENTATION\n";
+
+	// TODO implementation
+
+	char* implementation_footer = "\n#endif // HEADERSCRIPT_IMPLEMENTATION\n";
 
 	printf("Generated output:\n\n%s\n", out.arr);
 
