@@ -283,7 +283,7 @@ int main(int argc, char **argv)
 		"  {\n"
 		"    switch(hash_c_string(lines[i]))\n"
 		"    {\n";
-		
+
 	Append_fmt("%s", VM_Implementation);
 
 	for (int i = 0; i < functions.len; i++)
@@ -291,6 +291,8 @@ int main(int argc, char **argv)
 		Append_fmt("      case %llu: %s(); break;\n", hash_c_string(functions.arr[i].name), functions.arr[i].name);
 	}
 	
+	Append_fmt("      default: break;\n"); // TODO handle this as an error
+
 	char* implementation_footer = 
 		"    }\n" // switch end
 		"  }\n"   // for end
