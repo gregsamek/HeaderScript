@@ -88,6 +88,27 @@ bool LoadFile(const char* file_name, char** buffer, size_t* file_size)
 	return true;
 }
 
+bool SaveFile(const char* file_name, const char* buffer, size_t file_size)
+{
+	FILE* file = fopen(file_name, "wb");
+	if (!file)
+	{
+		fprintf(stderr, "Could not open file for writing: %s\n", file_name);
+		return false;
+	}
+
+	size_t bytes_written = fwrite(buffer, sizeof(char), file_size, file);
+	if (bytes_written != file_size)
+	{
+		fprintf(stderr, "Failed to write the entire buffer to file: %s\n", file_name);
+		fclose(file);
+		return false;
+	}
+
+	fclose(file);
+	return true;
+}
+
 bool GetHeaderFileList(int argc, char **argv, char** header_file_list, size_t* file_size)
 {
 	if (argc > 2) 
@@ -186,11 +207,6 @@ int main(int argc, char **argv)
 
 		free(header_file);
 	}
-	
-	for (int i = 0; i < functions.len; i++)
-	{
-		printf("Found function: %s\n", functions.arr[i].name);
-	}
 
 	char* header_guard = "#ifndef HEADERSCRIPT_H\n#define HEADERSCRIPT_H\n\n";
 	char* cpp_compatibility = "#ifdef __cplusplus\nextern \"C\" {\n#endif\n\n";
@@ -245,6 +261,7 @@ int main(int argc, char **argv)
 	Append_fmt("%s", implementation_guard);
 
 	char* VM_Implementation = 
+		"\nunsigned long long hash_c_string(char* s)\n{\n  unsigned long long h = 14695981039346656037ULL;\n  while (*s)\n  {\n    h = (h ^ *s) * 1099511628211; s += 1;\n  } return h;\n}\n\n"
 		"\nint HEADERSCRIPT_VM(char* input)\n"
 		"{\n"
 		"  char *lines[1024];\n"
@@ -262,16 +279,33 @@ int main(int argc, char **argv)
 		"      scanner_current++;\n"
 		"    }\n"
 		"  }\n"
-		"}\n";
-
+		"  for (int i = 0; i < line_count; i++)\n"
+		"  {\n"
+		"    switch(hash_c_string(lines[i]))\n"
+		"    {\n";
+		
 	Append_fmt("%s", VM_Implementation);
 
-	char* implementation_footer = "\n#endif // HEADERSCRIPT_IMPLEMENTATION\n";
+	for (int i = 0; i < functions.len; i++)
+	{
+		Append_fmt("      case %llu: %s(); break;\n", hash_c_string(functions.arr[i].name), functions.arr[i].name);
+	}
+	
+	char* implementation_footer = 
+		"    }\n" // switch end
+		"  }\n"   // for end
+		"}\n"     // VM end
+		"\n#endif // HEADERSCRIPT_IMPLEMENTATION\n";
 	Append_fmt("%s", implementation_footer);
 
 	#undef Append_fmt
 
 	printf("Generated output:\n\n%s\n", out.arr);
+
+	if (!SaveFile("test/headerscript.h", out.arr, out.len))
+	{
+		fprintf(stderr, "Failed to save output file!\n");
+	}
 
 	free(header_file_list);
 
