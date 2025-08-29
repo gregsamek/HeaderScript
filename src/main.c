@@ -8,7 +8,11 @@
 #define true 1
 #define false 0
 
-#define DEFAULT_HEADER_LIST "test/test.txt"
+#define uint64_t unsigned long long
+#define int64_t long long
+#define uint32_t unsigned int
+
+#define DEFAULT_HEADER_LIST "test/test_header_list.txt"
 
 typedef struct
 {
@@ -28,6 +32,27 @@ typedef struct Array_Char
     int len;
     int cap;
 } Array_Char;
+
+uint64_t hash(char* s, uint32_t len)
+{
+    uint64_t h = 14695981039346656037ULL;
+    for (uint32_t i = 0; i < len; i++)
+    {
+        h = (h ^ s[i]) * 1099511628211;
+    }
+    return h;
+}
+
+uint64_t hash_c_string(char* s)
+{
+    uint64_t h = 14695981039346656037ULL;
+    while (*s)
+    {
+        h = (h ^ *s) * 1099511628211;
+        s += 1;
+    }
+    return h;
+}
 
 bool LoadFile(const char* file_name, char** buffer, size_t* file_size)
 {
@@ -87,9 +112,9 @@ bool GetHeaderFileList(int argc, char **argv, char** header_file_list, size_t* f
 	return true;
 }
 
-bool ParseHeaderFileList(char* header_file_list, char* headers[], int* header_count)
+bool ParseLines(char* source, char* lines[], int* line_count)
 {
-	char *scanner_start, *scanner_current = header_file_list;
+	char *scanner_start, *scanner_current = source;
 	while (true)
 	{
 		scanner_start = scanner_current;
@@ -105,7 +130,7 @@ bool ParseHeaderFileList(char* header_file_list, char* headers[], int* header_co
 
 		if (scanner_current > scanner_start)
 		{
-			headers[(*header_count)++] = scanner_start;
+			lines[(*line_count)++] = scanner_start;
 		}
 
 		while (*scanner_current == '\n' || *scanner_current == ' ' || *scanner_current == '\t' || *scanner_current == '\r')
@@ -138,7 +163,7 @@ int main(int argc, char **argv)
 	char* headers[1024];
 	int header_count = 0;
 
-	if (!ParseHeaderFileList(header_file_list, headers, &header_count))
+	if (!ParseLines(header_file_list, headers, &header_count))
 	{
 		free(header_file_list);
 		return -1;
@@ -209,9 +234,7 @@ int main(int argc, char **argv)
 		Append_fmt("#include \"%s\"\n", headers[i]);
 	}
 
-	char* VM_Prototypes = 
-		"\nint HEADERSCRIPT_Parse(char* input);\n"
-		"int HEADERSCRIPT_VM(char* input);\n";
+	char* VM_Prototypes = "\nint HEADERSCRIPT_VM(char* input);\n";
 
 	Append_fmt("%s", VM_Prototypes);
 
@@ -221,10 +244,32 @@ int main(int argc, char **argv)
 	char* implementation_guard = "#ifdef HEADERSCRIPT_IMPLEMENTATION\n";
 	Append_fmt("%s", implementation_guard);
 
-	// TODO implementation
+	char* VM_Implementation = 
+		"\nint HEADERSCRIPT_VM(char* input)\n"
+		"{\n"
+		"  char *lines[1024];\n"
+		"  int line_count = 0;\n"
+		"  char *scanner_start, *scanner_current = input;\n"
+		"  while (true)\n"
+		"  {\n"
+		"    scanner_start = scanner_current;\n"
+		"    if (*scanner_current == '\\0') break;\n"
+		"    while (*scanner_current != '\\0' && *scanner_current != '\\n' && *scanner_current != ' ' && *scanner_current != '\\t') scanner_current++;\n"
+		"    if (scanner_current > scanner_start) lines[line_count++] = scanner_start;\n"
+		"    while (*scanner_current == '\\n' || *scanner_current == ' ' || *scanner_current == '\\t' || *scanner_current == '\\r')\n"
+		"    {\n"
+		"      *scanner_current = '\\0';\n"
+		"      scanner_current++;\n"
+		"    }\n"
+		"  }\n"
+		"}\n";
+
+	Append_fmt("%s", VM_Implementation);
 
 	char* implementation_footer = "\n#endif // HEADERSCRIPT_IMPLEMENTATION\n";
 	Append_fmt("%s", implementation_footer);
+
+	#undef Append_fmt
 
 	printf("Generated output:\n\n%s\n", out.arr);
 
