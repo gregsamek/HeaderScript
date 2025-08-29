@@ -1,4 +1,4 @@
-#include "test.h"
+#include "test_lib.h"
 
 void test(void)
 {
