@@ -209,15 +209,22 @@ int main(int argc, char **argv)
 		Append_fmt("#include \"%s\"\n", headers[i]);
 	}
 
-	// TODO header
+	char* VM_Prototypes = 
+		"\nint HEADERSCRIPT_Parse(char* input);\n"
+		"int HEADERSCRIPT_VM(char* input);\n";
+
+	Append_fmt("%s", VM_Prototypes);
 
 	char* header_footer = "\n#ifdef __cplusplus\n}\n#endif\n\n#endif // HEADERSCRIPT_H\n";
+	Append_fmt("%s", header_footer);
 
 	char* implementation_guard = "#ifdef HEADERSCRIPT_IMPLEMENTATION\n";
+	Append_fmt("%s", implementation_guard);
 
 	// TODO implementation
 
 	char* implementation_footer = "\n#endif // HEADERSCRIPT_IMPLEMENTATION\n";
+	Append_fmt("%s", implementation_footer);
 
 	printf("Generated output:\n\n%s\n", out.arr);
 
